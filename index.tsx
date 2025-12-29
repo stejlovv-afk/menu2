@@ -1,15 +1,21 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
+import React, { useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ShoppingCart } from 'lucide-react';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+const App = () => {
+    useEffect(() => {
+        window.Telegram?.WebApp.ready();
+    }, []);
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+    return (
+        <div className="p-4">
+            <h1 className="text-2xl font-bold text-orange-600">Urban Lunch</h1>
+            <p>Ваше меню готово к работе!</p>
+        </div>
+    );
+};
+
+// Важный момент для работы через Babel в браузере:
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(<App />);
