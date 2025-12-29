@@ -1,6 +1,6 @@
 import { MenuItem } from './types.ts';
 
-// Обновили путь на menu2
+// Base URL for images
 export const IMG_BASE = "https://raw.githubusercontent.com/stejlovv-afk/menu2/main/";
 
 export const CATEGORIES: { id: string; label: string }[] = [
