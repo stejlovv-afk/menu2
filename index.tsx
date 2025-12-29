@@ -1,13 +1,564 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Urban Lunch</title>
+    
+    <!-- Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ios: { bg: '#F2F2F7', blue: '#007AFF', red: '#FF3B30', green: '#34C759', text: '#1C1C1E' }
+            },
+            fontFamily: {
+              sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            },
+            boxShadow: {
+              'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+      body { background-color: #F2F2F7; }
+      .blur-backdrop { backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
+    </style>
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react",
+        "framer-motion": "https://esm.sh/framer-motion@10.12.16?external=react,react-dom"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-    <App />
-);
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { ShoppingCart, X, Trash2, ShieldCheck, Lock, ChevronRight, Search, Coffee } from 'lucide-react';
+        import { motion, AnimatePresence } from 'framer-motion';
+
+        // --- CONSTANTS & DATA ---
+        const IMG_BASE = "https://raw.githubusercontent.com/stejlovv-afk/menu2/main/";
+
+        const CATEGORIES = [
+            { id: 'coffee', label: 'Кофе' },
+            { id: 'tea', label: 'Чай' },
+            { id: 'punsh', label: 'Пунши' },
+            { id: 'seasonal', label: 'Сезон' },
+            { id: 'ice', label: 'Холодные' },
+            { id: 'food', label: 'Еда' },
+            { id: 'drinks', label: 'Напитки' },
+        ];
+
+        const MILKS = ["Обычное", "Кокосовое", "Банановое", "Миндальное", "Безлактозное"];
+        const SYRUPS = ["Фисташка", "Лесной орех", "Кокос", "Миндаль", "Лаванда", "Малина", "Соленая карамель"];
+
+        const MENU_ITEMS = [
+            { id: 1, cat: 'coffee', name: "Капучино", sizes: {"250":190, "350":230, "450":270}, img: "kapuchino-min.jpg" },
+            { id: 2, cat: 'coffee', name: "Латте", sizes: {"250":190, "350":230, "450":270}, img: "latte-min.jpg" },
+            { id: 3, cat: 'coffee', name: "Эспрессо", sizes: {"30":110, "60":150}, img: "espresso1-min.jpg", noMilk: true },
+            { id: 4, cat: 'coffee', name: "Американо", sizes: {"250":180, "350":220, "450":260}, img: "americano-min.jpg", noMilk: true },
+            { id: 5, cat: 'coffee', name: "Флат Уайт", sizes: {"250":220, "350":260, "450":360}, img: "kapuchino-min.jpg" },
+            { id: 6, cat: 'coffee', name: "Раф", sizes: {"250":210, "350":250, "450":290}, img: "latte-min.jpg" },
+            { id: 7, cat: 'coffee', name: "Бамбл Теплый", sizes: {"250":270, "350":270, "450":300}, img: "kapuchino-min.jpg", isBumble: true },
+            { id: 20, cat: 'tea', name: "Чай Черный", sizes: {"350":120, "450":180}, img: "teablack-min.jpg" },
+            { id: 21, cat: 'tea', name: "Чай Зеленый", sizes: {"350":120, "450":180}, img: "greentea-min.jpg" },
+            { id: 22, cat: 'tea', name: "Чай Каркаде", sizes: {"350":120, "450":180}, img: "karkadetea-min.jpg" },
+            { id: 23, cat: 'tea', name: "Чай Зеленый Жасмин", sizes: {"350":120, "450":180}, img: "greenjasmin-min.jpg" },
+            { id: 24, cat: 'tea', name: "Чай Травяной", sizes: {"350":120, "450":180}, img: "travatea-min.jpg" },
+            { id: 25, cat: 'tea', name: "Матча", sizes: {"250":180, "350":220, "450":260}, img: "matcha-min.jpg" },
+            { id: 26, cat: 'tea', name: "Какао", sizes: {"250":180, "350":220, "450":260}, img: "kakao-min.jpg" },
+            { id: 27, cat: 'tea', name: "Пряный чай", sizes: {"250":240, "350":280, "450":320}, img: "kakao-min.jpg" },
+            { id: 28, cat: 'tea', name: "Горячий шоколад", price: 180, img: "kakao-min.jpg" },
+            { id: 29, cat: 'tea', name: "Глинтвейн", sizes: {"350":230, "450":270}, img: "glintveinpunch-min.jpg" },
+            { id: 50, cat: 'punsh', name: "Облепиховый пунш", sizes: {"350":230, "450":270}, img: "oblepihapunch-min.jpg" },
+            { id: 51, cat: 'punsh', name: "Малиновый пунш", sizes: {"350":230, "450":270}, img: "malinapunsh-min.jpg" },
+            { id: 80, cat: 'seasonal', name: "Латте Халва", sizes: {"350":290, "450":350}, img: "lattehalva-min.jpg", noSyrup: true },
+            { id: 81, cat: 'seasonal', name: "Латте Тыква", sizes: {"350":290, "450":350}, img: "lattetikva-min.jpg", noSyrup: true },
+            { id: 82, cat: 'seasonal', name: "Раф Сникерс", sizes: {"350":320, "450":380}, img: "rafsnikers-min.jpg", noSyrup: true },
+            { id: 83, cat: 'seasonal', name: "Латте Orange Christmas", sizes: {"350":320, "450":380}, img: "latteorangecristmas-min.jpg", noSyrup: true },
+            { id: 60, cat: 'ice', name: "Айс Латте", sizes: {"250":240, "350":280}, img: "latte-min.jpg" },
+            { id: 61, cat: 'ice', name: "Эспрессо Тоник", sizes: {"250":250, "350":290}, img: "granattonic-min.jpg" },
+            { id: 62, cat: 'ice', name: "Бамбл Холодный", sizes: {"270":270, "300":300}, img: "kapuchino-min.jpg", isBumble: true },
+            { id: 63, cat: 'ice', name: "Айс Матча", sizes: {"230":230, "270":270}, img: "matcha-min.jpg" },
+            { id: 64, cat: 'ice', name: "Лимонад (Киви/Манго/Смор)", sizes: {"260":260, "290":290}, img: "lemonchernogo-min.jpg" },
+            { id: 100, cat: 'food', name: "Bombbar Лесной орех", price: 130, img: "bombbarfunduk-min.jpg" },
+            { id: 101, cat: 'food', name: "Bombbar Малиновый", price: 130, img: "bombbarfunduk-min.jpg" },
+            { id: 102, cat: 'food', name: "Bombbar Кокос", price: 130, img: "bombbarfunduk-min.jpg" },
+            { id: 103, cat: 'food', name: "Snaqer Орех/Карамель", price: 130, img: "snaqerfunduk-min.jpg" },
+            { id: 104, cat: 'food', name: "Печенье Chika Смородина", price: 170, img: "chikabiscuitbanan-min.jpg" },
+            { id: 105, cat: 'food', name: "Печенье Chika Банан", price: 170, img: "chikabiscuitbanan-min.jpg" },
+            { id: 106, cat: 'food', name: "Жвачка Эклипс", price: 80, img: "eclipce.jpg" },
+            { id: 107, cat: 'food', name: "Горький шоколад", price: 80, img: "chokolatgorkiy.jpg" },
+            { id: 108, cat: 'food', name: "Молочный шоколад", price: 80, img: "chokolatgorkiy.jpg" },
+            { id: 109, cat: 'food', name: "Choco Pie", price: 30, img: "chudo.jpg" },
+            { id: 110, cat: 'food', name: "Батончик Чудо", price: 60, img: "chudo.jpg" },
+            { id: 111, cat: 'food', name: "Бабаевский батончик", price: 100, img: "babka.jpg" },
+            { id: 200, cat: 'drinks', name: "Черноголовка Cola", price: 140, img: "colachernogo-min.jpg" },
+            { id: 201, cat: 'drinks', name: "Черноголовка Байкал", price: 140, img: "colachernogo-min.jpg" },
+            { id: 202, cat: 'drinks', name: "Черноголовка газ/негаз", price: 70, img: "negazcernogo-min.jpg" },
+            { id: 203, cat: 'drinks', name: "Черноголовка лимонад", price: 140, img: "colachernogo-min.jpg" },
+            { id: 204, cat: 'drinks', name: "Cosmos Тропический", price: 130, img: "cosmos.jpg" },
+            { id: 205, cat: 'drinks', name: "Cosmos Оригинальный", price: 130, img: "cosmos.jpg" },
+            { id: 206, cat: 'drinks', name: "Adrenaline Без сахара", price: 200, img: "adrenalin.jpg" },
+            { id: 207, cat: 'drinks', name: "Adrenaline Оригинальный", price: 200, img: "adrenalin.jpg" },
+            { id: 208, cat: 'drinks', name: "Сок Il Primo Томат", price: 120, img: "iltomato.jpg" },
+            { id: 209, cat: 'drinks', name: "Сок Il Primo Яблоко", price: 120, img: "iltomato.jpg" },
+            { id: 210, cat: 'drinks', name: "Сок Il Primo Апельсин", price: 120, img: "iltomato.jpg" },
+            { id: 211, cat: 'drinks', name: "Lipton Персик", price: 130, img: "lipton.jpg" },
+            { id: 212, cat: 'drinks', name: "Дикий апельсин-Юдзу", price: 110, img: "chernogolovkaorange.jpg" }
+        ];
+
+        const tg = window.Telegram?.WebApp;
+
+        // --- COMPONENTS ---
+
+        const ModalBackdrop = ({ onClick, children }) => (
+            <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0">
+                <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+                    className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClick} 
+                />
+                {children}
+            </div>
+        );
+
+        const ProductModal = ({ item, onClose, onAdd }) => {
+            const [options, setOptions] = useState({
+                size: null, milk: null, syrup: null, temp: null, sugar: null, cinnamon: false, juice: null
+            });
+
+            const calculatePrice = () => {
+                let p = item.price || (options.size ? options.size.price : 0);
+                const isLarge = options.size && parseInt(options.size.label) > 300;
+                if (options.milk && options.milk !== "Обычное") p += isLarge ? 90 : 70;
+                if (options.syrup) p += isLarge ? 50 : 30;
+                return p;
+            };
+
+            const currentPrice = calculatePrice();
+            const isDrinks = item.cat === 'drinks' || item.cat === 'ice';
+            const canAdd = (item.sizes ? !!options.size : true) && (isDrinks ? !!options.temp : true);
+
+            const handleAdd = () => {
+                if (!canAdd) {
+                    tg?.HapticFeedback.notificationOccurred('error');
+                    if (item.sizes && !options.size) tg?.showAlert("Выберите объем!");
+                    else if (isDrinks && !options.temp) tg?.showAlert("Выберите температуру!");
+                    return;
+                }
+                tg?.HapticFeedback.impactOccurred('medium');
+                onAdd(item, options, currentPrice);
+            };
+
+            const hideExtras = item.cat === 'food' || item.cat === 'drinks';
+            const showMilk = !hideExtras && !item.noMilk && item.cat !== 'tea' && item.cat !== 'punsh' && !item.isBumble;
+            const showSyrup = !hideExtras && !item.noSyrup && item.cat !== 'punsh';
+            const showJuice = item.isBumble;
+
+            return (
+                <ModalBackdrop onClick={onClose}>
+                    <motion.div 
+                        initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="relative w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="relative h-64 shrink-0 bg-gray-100">
+                            <img src={IMG_BASE + item.img} className="w-full h-full object-cover" onError={(e) => e.target.src = `https://placehold.co/600?text=${item.name}`} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                            <div className="absolute bottom-0 left-0 p-6 text-white w-full">
+                                <h2 className="text-3xl font-black leading-tight shadow-sm">{item.name}</h2>
+                            </div>
+                            <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2 text-white hover:bg-white/30 transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="px-5 py-6 overflow-y-auto no-scrollbar flex-1 space-y-8">
+                            {isDrinks && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Температура</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['Теплый', 'Холодный'].map(t => (
+                                            <button key={t} onClick={() => setOptions({...options, temp: options.temp === t ? null : t})}
+                                                className={`py-3.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${options.temp === t ? 'bg-black text-white scale-[1.02]' : 'bg-gray-100 text-gray-600'}`}>
+                                                {t === 'Теплый' ? '🌡 Теплый' : '🧊 Холодный'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {item.sizes && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Объем</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(item.sizes).map(([s, p]) => (
+                                            <button key={s} onClick={() => setOptions({...options, size: options.size?.label === s ? null : {label:s, price:p}})}
+                                                className={`px-5 py-3 rounded-2xl font-bold text-sm transition-all border-2 ${options.size?.label === s ? 'border-black bg-black text-white' : 'border-gray-100 bg-white text-gray-700'}`}>
+                                                {s} мл
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showMilk && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Молоко</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {MILKS.map(m => (
+                                            <button key={m} onClick={() => setOptions({...options, milk: options.milk === m ? null : m})}
+                                                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border ${options.milk === m ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 bg-white text-gray-600'}`}>
+                                                {m}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showJuice && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Сок</span>
+                                    <div className="flex gap-2">
+                                        {['Апельсиновый', 'Вишневый'].map(j => (
+                                            <button key={j} onClick={() => setOptions({...options, juice: options.juice === j ? null : j})}
+                                                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border ${options.juice === j ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 bg-white text-gray-600'}`}>
+                                                {j}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showSyrup && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Сироп</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SYRUPS.map(s => (
+                                            <button key={s} onClick={() => setOptions({...options, syrup: options.syrup === s ? null : s})}
+                                                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border ${options.syrup === s ? 'border-purple-500 bg-purple-50 text-purple-600' : 'border-gray-200 bg-white text-gray-600'}`}>
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!hideExtras && (
+                                <div className="space-y-3">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Дополнительно</span>
+                                    <div className="flex flex-wrap gap-3 items-center">
+                                        <button onClick={() => setOptions({...options, cinnamon: !options.cinnamon})}
+                                            className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border ${options.cinnamon ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-gray-600'}`}>
+                                            Корица
+                                        </button>
+                                        <div className="h-6 w-px bg-gray-200"></div>
+                                        {['5г', '10г', '15г'].map(s => (
+                                            <button key={s} onClick={() => setOptions({...options, sugar: options.sugar === s ? null : s})}
+                                                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all border ${options.sugar === s ? 'border-gray-800 bg-gray-100 text-black' : 'border-gray-200 bg-white text-gray-600'}`}>
+                                                Сахар {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="h-24"></div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/80 blur-backdrop border-t border-gray-200/50 p-4 pb-8 z-10">
+                            <button onClick={handleAdd} disabled={!canAdd} 
+                                className={`w-full py-4 rounded-2xl font-bold text-lg flex justify-between px-6 transition-all shadow-lg active:scale-[0.98] ${canAdd ? 'bg-black text-white shadow-black/20' : 'bg-gray-200 text-gray-400 shadow-none'}`}>
+                                <span>Добавить</span>
+                                <span>{currentPrice} ₽</span>
+                            </button>
+                        </div>
+                    </motion.div>
+                </ModalBackdrop>
+            );
+        };
+
+        const App = () => {
+            const [activeCat, setActiveCat] = useState(CATEGORIES[0].id);
+            const [cart, setCart] = useState([]);
+            const [selectedItem, setSelectedItem] = useState(null);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [stopList, setStopList] = useState([]);
+            const [floor, setFloor] = useState('');
+            const [office, setOffice] = useState('');
+            const [tapCount, setTapCount] = useState(0);
+            const tapTimer = useRef(null);
+
+            useEffect(() => {
+                if (tg) {
+                    tg.ready();
+                    tg.expand();
+                    tg.MainButton.hide();
+                    const params = new URLSearchParams(window.location.search);
+                    const stopParam = params.get('stop');
+                    if (stopParam) setStopList(stopParam.split(',').map(Number));
+                }
+            }, []);
+
+            const handleTitleTap = () => {
+                setTapCount(prev => prev + 1);
+                if (tapTimer.current) clearTimeout(tapTimer.current);
+                tapTimer.current = setTimeout(() => setTapCount(0), 1000);
+
+                if (tapCount + 1 >= 5) {
+                    const pwd = prompt("Пароль администратора:");
+                    if (pwd === "7654") {
+                        setIsAdmin(true);
+                        tg?.showAlert("Режим администратора включен ✅");
+                        tg?.HapticFeedback.notificationOccurred('success');
+                    }
+                    setTapCount(0);
+                }
+            };
+
+            const addToCart = (item, options, price) => {
+                const detailsArr = [];
+                if(options.size) detailsArr.push(`${options.size.label}мл`);
+                if(options.temp) detailsArr.push(options.temp);
+                if(options.milk) detailsArr.push(options.milk);
+                if(options.syrup) detailsArr.push(options.syrup);
+                if(options.juice) detailsArr.push(options.juice);
+                if(options.cinnamon) detailsArr.push("Корица");
+                if(options.sugar) detailsArr.push(`Сахар ${options.sugar}`);
+
+                const name = `${item.name} ${options.size ? options.size.label : ''}`;
+
+                setCart([...cart, {
+                    uid: Math.random().toString(36).substr(2, 9),
+                    id: item.id,
+                    baseName: item.name,
+                    name: name,
+                    price,
+                    details: detailsArr.join(', ')
+                }]);
+                setSelectedItem(null);
+            };
+
+            const handleCheckout = () => {
+                if(!floor || !office) {
+                    tg?.HapticFeedback.notificationOccurred('error');
+                    tg?.showAlert("Пожалуйста, укажите Этаж и Офис");
+                    return;
+                }
+                const payload = {
+                    type: 'order',
+                    items: cart.map(i => ({ label: i.name + (i.details ? ` (${i.details})` : ''), amount: i.price * 100 })),
+                    address: `Этаж ${floor}, Офис ${office}`
+                };
+                tg?.sendData(JSON.stringify(payload));
+            };
+
+            const handleAdminStop = (id) => {
+                tg?.HapticFeedback.impactOccurred('medium');
+                if(stopList.includes(id)) setStopList(stopList.filter(s => s !== id));
+                else setStopList([...stopList, id]);
+            };
+
+            const saveAdmin = () => {
+                tg?.sendData(JSON.stringify({ type: 'admin_sync', stop_list: stopList }));
+            };
+
+            return (
+                <div className="min-h-screen bg-[#F2F2F7] pb-24 select-none font-sans">
+                    {/* Header */}
+                    <div className="sticky top-0 bg-white/80 blur-backdrop z-40 pt-safe-top border-b border-gray-200/50">
+                        <div className="flex items-center justify-between px-5 h-14">
+                            <div onClick={handleTitleTap} className="flex flex-col cursor-pointer">
+                                <h1 className="font-black text-xl tracking-tight text-black flex items-center gap-2">
+                                    URBAN LUNCH
+                                    {isAdmin && <ShieldCheck size={18} className="text-blue-500 animate-pulse"/>}
+                                </h1>
+                                <span className="text-[10px] font-bold text-gray-400 tracking-wide uppercase">Coffee & Food</span>
+                            </div>
+                            {cart.length > 0 && (
+                                <motion.button 
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => setIsCartOpen(true)}
+                                    className="relative w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-black shadow-sm">
+                                    <ShoppingCart size={20} />
+                                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                                        {cart.length}
+                                    </span>
+                                </motion.button>
+                            )}
+                        </div>
+                        
+                        {/* Tabs */}
+                        <div className="flex overflow-x-auto px-4 gap-2 pb-3 pt-1 no-scrollbar snap-x">
+                            {CATEGORIES.map(cat => (
+                                <button key={cat.id} onClick={() => { setActiveCat(cat.id); tg?.HapticFeedback.selectionChanged(); }}
+                                    className={`flex-none px-4 py-2 rounded-full text-[13px] font-bold transition-all snap-start ${activeCat === cat.id ? 'bg-black text-white shadow-lg shadow-black/20' : 'bg-white text-gray-500 shadow-sm border border-gray-100'}`}>
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Product Grid */}
+                    <div className="p-4 grid grid-cols-2 gap-3 sm:gap-4">
+                        <AnimatePresence mode="popLayout">
+                            {MENU_ITEMS.filter(i => i.cat === activeCat).map(item => {
+                                const isStopped = stopList.includes(item.id);
+                                if(isStopped && !isAdmin) return null;
+
+                                return (
+                                    <motion.div 
+                                        layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: isStopped ? 0.6 : 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        key={item.id}
+                                        onClick={() => isAdmin ? handleAdminStop(item.id) : setSelectedItem(item)}
+                                        className={`bg-white rounded-[24px] p-3 shadow-sm shadow-gray-200/50 flex flex-col gap-3 active:scale-[0.96] transition-transform relative border border-white ${isStopped ? 'grayscale ring-2 ring-red-500' : ''}`}
+                                    >
+                                        {isAdmin && isStopped && <div className="absolute top-3 right-3 bg-red-500 text-white p-1.5 rounded-full z-10 shadow-md"><Lock size={14}/></div>}
+                                        <div className="aspect-square rounded-[18px] bg-gray-50 overflow-hidden relative">
+                                            <img src={IMG_BASE + item.img} className="w-full h-full object-cover" loading="lazy" onError={(e) => e.target.src = `https://placehold.co/300?text=${item.name}`}/>
+                                            {!item.price && !item.sizes && <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs">Нет фото</div>}
+                                        </div>
+                                        <div className="px-1 pb-1">
+                                            <div className="font-bold text-[13px] leading-tight line-clamp-2 h-8 text-gray-900">{item.name}</div>
+                                            <div className="flex justify-between items-end mt-2">
+                                                <div className="text-black font-extrabold text-sm">
+                                                    {item.price ? `${item.price} ₽` : item.sizes ? `от ${Object.values(item.sizes)[0]}` : ''}
+                                                </div>
+                                                <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
+                                                    <ChevronRight size={14}/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )
+                            })}
+                        </AnimatePresence>
+                    </div>
+                    
+                    {/* Empty State */}
+                    {MENU_ITEMS.filter(i => i.cat === activeCat && (!stopList.includes(i.id) || isAdmin)).length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
+                            <Search size={48} strokeWidth={1.5} className="opacity-20" />
+                            <p className="font-medium text-sm">В этой категории пока пусто</p>
+                        </div>
+                    )}
+
+                    {/* Admin Save Button */}
+                    {isAdmin && (
+                        <div className="fixed bottom-8 inset-x-4 z-40">
+                            <motion.button initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                                onClick={saveAdmin} 
+                                className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-600/30 active:scale-95 transition flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+                                <ShieldCheck size={18}/>
+                                Сохранить изменения
+                            </motion.button>
+                        </div>
+                    )}
+
+                    {/* Modals */}
+                    <AnimatePresence>
+                        {selectedItem && <ProductModal item={selectedItem} onClose={() => setSelectedItem(null)} onAdd={addToCart} />}
+                    </AnimatePresence>
+
+                    {/* Cart Modal */}
+                    <AnimatePresence>
+                        {isCartOpen && (
+                            <ModalBackdrop onClick={() => setIsCartOpen(false)}>
+                                <motion.div 
+                                    initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} 
+                                    transition={{ type: "spring", damping: 25, stiffness: 300 }} 
+                                    onClick={e => e.stopPropagation()}
+                                    className="bg-[#F2F2F7] w-full h-[95vh] rounded-t-[32px] flex flex-col z-10 shadow-2xl overflow-hidden"
+                                >
+                                    <div className="bg-white p-5 border-b border-gray-200/50 flex justify-between items-center sticky top-0 z-10">
+                                        <h2 className="text-2xl font-black tracking-tight">Корзина</h2>
+                                        {cart.length > 0 && <button onClick={() => { setCart([]); tg?.HapticFeedback.impactOccurred('medium'); }} className="text-red-500 text-xs font-bold px-3 py-1.5 bg-red-50 rounded-lg">Очистить</button>}
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                                        {cart.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-6 opacity-60">
+                                                <div className="w-24 h-24 bg-gray-200/50 rounded-full flex items-center justify-center"><ShoppingCart size={40}/></div>
+                                                <span className="font-bold text-lg">Корзина пуста</span>
+                                                <button onClick={() => setIsCartOpen(false)} className="text-blue-500 font-semibold">Перейти к меню</button>
+                                            </div>
+                                        ) : (
+                                            cart.map((c, i) => (
+                                                <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ delay: i * 0.05 }}
+                                                    key={c.uid} className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-start">
+                                                    <div className="flex-1 pr-4">
+                                                        <div className="font-bold text-[15px]">{c.baseName}</div>
+                                                        <div className="text-xs text-gray-500 font-medium leading-relaxed mt-1 bg-gray-50 p-2 rounded-lg inline-block">
+                                                            {c.details || "Стандарт"}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-3">
+                                                        <span className="font-bold text-[15px]">{c.price} ₽</span>
+                                                        <button onClick={() => { setCart(cart.filter(x => x.uid !== c.uid)); tg?.HapticFeedback.selectionChanged(); }} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                                            <Trash2 size={16}/>
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {cart.length > 0 && (
+                                        <div className="p-5 bg-white border-t border-gray-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe-bottom">
+                                            <div className="space-y-3 mb-5">
+                                                <div className="relative">
+                                                    <input type="number" placeholder="Этаж" value={floor} onChange={e=>setFloor(e.target.value)} 
+                                                        className="w-full p-4 pl-12 rounded-xl bg-gray-50 border-none font-semibold focus:ring-2 ring-black transition-all outline-none"/>
+                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs uppercase">Fl.</div>
+                                                </div>
+                                                <div className="relative">
+                                                    <input type="text" placeholder="Офис / Кабинет" value={office} onChange={e=>setOffice(e.target.value)} 
+                                                        className="w-full p-4 pl-12 rounded-xl bg-gray-50 border-none font-semibold focus:ring-2 ring-black transition-all outline-none"/>
+                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs uppercase">Of.</div>
+                                                </div>
+                                            </div>
+                                            <button onClick={handleCheckout} className="w-full bg-black text-white font-bold py-4 rounded-2xl flex justify-between px-6 shadow-xl shadow-black/10 active:scale-[0.98] transition">
+                                                <span>Оформить заказ</span>
+                                                <span>{cart.reduce((a,b)=>a+b.price,0)} ₽</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </ModalBackdrop>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
