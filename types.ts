@@ -13,7 +13,7 @@ export interface MenuItem {
 }
 
 export interface CartItem {
-  uid: string; // Unique ID for cart entry
+  uid: string;
   id: number;
   name: string;
   baseName: string;
@@ -29,21 +29,4 @@ export interface SelectedOptions {
   sugar: string | null;
   cinnamon: boolean;
   juice: string | null;
-}
-
-export interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  close: () => void;
-  MainButton: {
-    show: () => void;
-    hide: () => void;
-    setText: (text: string) => void;
-    onClick: (cb: () => void) => void;
-    offClick: (cb: () => void) => void;
-  };
-  sendData: (data: string) => void;
-  showAlert: (message: string) => void;
-  showConfirm: (message: string, callback: (ok: boolean) => void) => void;
-  initDataUnsafe: any;
 }
