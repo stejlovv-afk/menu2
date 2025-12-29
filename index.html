@@ -6,7 +6,7 @@
     <title>Urban Lunch</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Babel для компиляции React прямо в браузере -->
+    <!-- Babel for compiling React in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -18,18 +18,17 @@
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-    "framer-motion": "https://esm.sh/framer-motion@10.12.16",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "lucide-react": "https://esm.sh/lucide-react@0.263.1?external=react",
+    "framer-motion": "https://esm.sh/framer-motion@10.12.16?external=react,react-dom"
   }
 }
 </script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Загружаем наше приложение как модуль с Babel -->
+    <!-- Load the main entry file which handles rendering -->
     <script type="text/babel" data-type="module" src="./index.tsx"></script>
   </body>
 </html>
