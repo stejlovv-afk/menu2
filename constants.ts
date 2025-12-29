@@ -1,6 +1,7 @@
 import { MenuItem } from './types.ts';
 
-export const IMG_BASE = "https://raw.githubusercontent.com/stejlovv-afk/menu/main/";
+// Обновили путь на menu2
+export const IMG_BASE = "https://raw.githubusercontent.com/stejlovv-afk/menu2/main/";
 
 export const CATEGORIES: { id: string; label: string }[] = [
   { id: 'coffee', label: 'Кофе' },
